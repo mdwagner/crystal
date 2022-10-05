@@ -162,7 +162,12 @@ module Crystal
       program = new_program(source)
       node = parse program, source
       node = program.semantic node, cleanup: !no_cleanup?
-      result = codegen program, node, source, output_filename unless @no_codegen
+
+      if @c_backend
+        result = c_codegen program, node, source, output_filename
+      elsif !@no_codegen
+        result = codegen program, node, source, output_filename
+      end
 
       @progress_tracker.clear
       print_macro_run_stats(program)
@@ -276,11 +281,7 @@ module Crystal
         cross_compile program, units, output_filename
       else
         result = with_file_lock(output_dir) do
-          if @c_backend
-            CBackend.codegen(program, units, output_filename, output_dir)
-          else
-            codegen program, units, output_filename, output_dir
-          end
+          codegen program, units, output_filename, output_dir
         end
 
         {% if flag?(:darwin) %}
@@ -291,6 +292,24 @@ module Crystal
       CacheDir.instance.cleanup if @cleanup
 
       result
+    end
+
+    private def c_codegen(program, node : ASTNode, sources, output_filename)
+      # Crystal => C
+      c_modules = CBackend.codegen program, node, debug: debug, single_module: @single_module
+      nil
+
+      # output_dir = CacheDir.instance.directory_for(sources)
+      # bc_flags_changed = bc_flags_changed? output_dir
+      # target_triple = target_machine.triple
+
+      # # Compilation units for C
+      # units = CBackend.gen_modules(c_modules)
+      # # Emit C code
+      # result = CBackend.emit(units)
+
+      # CacheDir.instance.cleanup if @cleanup
+      # result
     end
 
     private def with_file_lock(output_dir)
