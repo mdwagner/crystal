@@ -146,6 +146,9 @@ module Crystal
     # Program that was created for the last compilation.
     property! program : Program
 
+    # Whether to build with C Backend
+    property? c_backend = false
+
     # Compiles the given *source*, with *output_filename* as the name
     # of the generated executable.
     #
@@ -273,7 +276,11 @@ module Crystal
         cross_compile program, units, output_filename
       else
         result = with_file_lock(output_dir) do
-          codegen program, units, output_filename, output_dir
+          if @c_backend
+            CBackend.codegen(program, units, output_filename, output_dir)
+          else
+            codegen program, units, output_filename, output_dir
+          end
         end
 
         {% if flag?(:darwin) %}

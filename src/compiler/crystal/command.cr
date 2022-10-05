@@ -345,6 +345,9 @@ class Crystal::Command
         opts.on("--no-debug", "Skip any symbolic debug info") do
           compiler.debug = Crystal::Debug::None
         end
+        opts.on("--c-backend", "Compile with C Backend") do
+          compiler.c_backend = true
+        end
       end
 
       opts.on("-D FLAG", "--define FLAG", "Define a compile-time flag") do |flag|
